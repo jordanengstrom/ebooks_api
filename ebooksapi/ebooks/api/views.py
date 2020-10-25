@@ -1,16 +1,46 @@
 from rest_framework import generics, mixins
+from rest_framework.generics import get_object_or_404
 from ebooks.models import Ebook, Review
 from ebooks.api.serializers import EbookSerializer, ReviewSerializer
 
 
-class EbookListCreateAPIView(mixins.ListModelMixin,
-                             mixins.CreateModelMixin,
-                             generics.GenericAPIView):
+class EbookListCreateAPIView(generics.ListCreateAPIView):
     queryset = Ebook.objects.all()
     serializer_class = EbookSerializer
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+class EbookDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Ebook.objects.all()
+    serializer_class = EbookSerializer
+
+
+class ReviewCreateAPIView(generics.CreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+    # We have to override this method because we need the Review to be
+    # associated with a sepcific Ebook instance
+    def perform_create(self, serializer):
+        ebook_pk = self.kwargs.get('ebook_pk')
+        ebook = get_object_or_404(Ebook, pk=ebook_pk)
+        serializer.save(ebook=ebook)
+
+
+class ReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+# This is how you can use custom mixing with a generic api view,
+# but if you want more "out of the box", less custom functionality,
+# you can just use concrete view classes
+# class EbookListCreateAPIView(mixins.ListModelMixin,
+#                              mixins.CreateModelMixin,
+#                              generics.GenericAPIView):
+#     queryset = Ebook.objects.all()
+#     serializer_class = EbookSerializer
+#
+#     def get(self, request, *args, **kwargs):
+#         return self.list(request, *args, **kwargs)
+#
+#     def post(self, request, *args, **kwargs):
+#         return self.create(request, *args, **kwargs)
